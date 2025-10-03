@@ -17,7 +17,7 @@ A reactive Spring Boot application built with Kotlin for managing shopping carts
 
 ## Running the Application
 
-1. Navigate to the project root (`/Users/vaibhawk/personal/carts`).
+1. Navigate to the project root.
 2. Build and run:
    ```
    ./gradlew bootRun
@@ -75,6 +75,18 @@ Expected response (if found):
 }
 ```
 If not found: 404 Not Found.
+
+## Load Testing
+
+This project includes comprehensive load testing capabilities using K6. The load testing setup can scale up to 1000 concurrent users with realistic ramp-up patterns.
+
+**Quick Start:**
+```bash
+cd load-testing
+./test.sh
+```
+
+For detailed load testing documentation, see [load-testing/README.md](load-testing/README.md).
 
 ## Running Integration Tests
 
