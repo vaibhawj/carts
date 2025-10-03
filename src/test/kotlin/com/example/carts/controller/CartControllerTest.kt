@@ -1,7 +1,9 @@
 package com.example.carts.controller
 
-import com.example.carts.dao.Cart
+import com.example.carts.dao.Cart as DaoCart
+import com.example.carts.dao.Item as DaoItem
 import com.example.carts.dto.CreateCartRequest
+import com.example.carts.model.Cart
 import com.example.carts.model.Item
 import com.example.carts.repository.CartRepository
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -19,6 +21,7 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import reactor.core.publisher.Mono
 import java.util.UUID
+import kotlin.test.assertEquals
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -65,11 +68,11 @@ class CartControllerTest(
     @Test
     fun shouldRetrieveCreatedCart(): Unit = runBlocking {
         val cartId = UUID.randomUUID().toString()
-        val cart = Cart(
+        val cart = DaoCart(
             id = cartId,
             userId = "user123",
             items = listOf(
-                Item(productId = "product1", quantity = 2)
+                DaoItem(productId = "product1", quantity = 2)
             )
         )
         cartRepository.save(cart).awaitSingle()

@@ -1,6 +1,5 @@
 package com.example.carts.dao
 
-import com.example.carts.model.Item
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 
