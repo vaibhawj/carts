@@ -3,6 +3,7 @@ package com.example.carts.controller
 import com.example.carts.dao.Cart as DaoCart
 import com.example.carts.dao.Item as DaoItem
 import com.example.carts.dto.CreateCartRequest
+import com.example.carts.dto.ErrorResponse
 import com.example.carts.model.Cart
 import com.example.carts.model.Item
 import com.example.carts.repository.CartRepository
@@ -22,6 +23,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import reactor.core.publisher.Mono
 import java.util.UUID
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -58,11 +60,9 @@ class CartControllerTest(
             .body(Mono.just(request), CreateCartRequest::class.java)
             .exchange()
             .expectStatus().isOk
-            .expectBody(String::class.java)
-            .consumeWith { response ->
-                val cartId = response.responseBody
-                assert(cartId != null && cartId.isNotEmpty())
-            }
+            .expectBody()
+            .jsonPath("$.cartId").exists()
+            .jsonPath("$.message").isEqualTo("Cart created successfully")
     }
 
     @Test
@@ -98,5 +98,59 @@ class CartControllerTest(
             .uri("/carts/$nonExistentId")
             .exchange()
             .expectStatus().isNotFound
+            .expectBody(ErrorResponse::class.java)
+            .consumeWith { response ->
+                val errorResponse = response.responseBody
+                assertNotNull(errorResponse)
+                assertEquals(404, errorResponse.status)
+                assertEquals("Not Found", errorResponse.error)
+                assert(errorResponse.message.contains("Cart with ID '$nonExistentId' not found"))
+            }
     }
+
+    @Test
+    fun shouldCreateCartWithEmptyItems(): Unit = runBlocking {
+        // Test that empty carts are allowed (validation was removed from service)
+        val request = CreateCartRequest(
+            userId = "test-user",
+            items = emptyList()
+        )
+
+        webTestClient.post()
+            .uri("/carts")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(Mono.just(request), CreateCartRequest::class.java)
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.cartId").exists()
+            .jsonPath("$.message").isEqualTo("Cart created successfully")
+    }
+
+    @Test
+    fun shouldReturn400ErrorWithJsonResponseForEmptyUserId(): Unit = runBlocking {
+        // Test that empty userId triggers validation error
+        val request = CreateCartRequest(
+            userId = "", // Empty userId should trigger IllegalArgumentException
+            items = emptyList()
+        )
+
+        webTestClient.post()
+            .uri("/carts")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(Mono.just(request), CreateCartRequest::class.java)
+            .exchange()
+            .expectStatus().isBadRequest
+            .expectBody(ErrorResponse::class.java)
+            .consumeWith { response ->
+                val errorResponse = response.responseBody
+                assertNotNull(errorResponse)
+                assertEquals(400, errorResponse.status)
+                assertEquals("Bad Request", errorResponse.error)
+                assertEquals("User ID is required", errorResponse.message)
+                assertEquals("/carts", errorResponse.path)
+                assertNotNull(errorResponse.timestamp)
+            }
+    }
+
 }
