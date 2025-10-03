@@ -6,34 +6,41 @@ import com.example.carts.model.Item
 import com.example.carts.repository.CartRepository
 import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
+import org.testcontainers.containers.MongoDBContainer
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
 import reactor.core.publisher.Mono
 import java.util.UUID
 
-@SpringBootTest(webEnvironment = org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT)
-class CartControllerTest(@Autowired private val webTestClient: WebTestClient,
-                         @Autowired private val cartRepository: CartRepository,
-                         @Autowired private val objectMapper: ObjectMapper) {
-
-    @BeforeEach
-    fun setUp() = runBlocking {
-        cartRepository.deleteAll().awaitSingle()
+@Testcontainers
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class CartControllerTest(
+    @Autowired private val webTestClient: WebTestClient,
+    @Autowired private val cartRepository: CartRepository,
+    @Autowired private val objectMapper: ObjectMapper
+) {
+    companion object {
+        @Container
+        @JvmStatic
+        val mongoDBContainer = MongoDBContainer("mongo:4.4.6")
+            .withExposedPorts(27017)
     }
 
-    @AfterEach
-    fun tearDown() = runBlocking {
-        cartRepository.deleteAll().awaitSingle()
+    @BeforeEach
+    fun setUp(): Unit = runBlocking {
+        cartRepository.deleteAll().awaitSingleOrNull()
     }
 
     @Test
-    fun `should create cart and return cartId`() = runBlocking {
+    fun shouldCreateCartAndReturnCartId(): Unit = runBlocking {
         val request = CreateCartRequest(
             userId = "user123",
             items = listOf(
@@ -56,7 +63,7 @@ class CartControllerTest(@Autowired private val webTestClient: WebTestClient,
     }
 
     @Test
-    fun `should retrieve created cart`() = runBlocking {
+    fun shouldRetrieveCreatedCart(): Unit = runBlocking {
         val cartId = UUID.randomUUID().toString()
         val cart = Cart(
             id = cartId,
@@ -81,7 +88,7 @@ class CartControllerTest(@Autowired private val webTestClient: WebTestClient,
     }
 
     @Test
-    fun `should return 404 for non-existent cart`() = runBlocking {
+    fun shouldReturn404ForNonExistentCart(): Unit = runBlocking {
         val nonExistentId = UUID.randomUUID().toString()
 
         webTestClient.get()
