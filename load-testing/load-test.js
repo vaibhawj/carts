@@ -3,18 +3,16 @@ import { check, sleep } from 'k6';
 
 const BASE_URL = 'http://localhost:8080';
 
-// Define load stages for realistic ramp-up to 1000 users
+// Define load stages for quick ramp-up to 1000 users
 export let options = {
   stages: [
-    { duration: '2m', target: 50 },    // Ramp up to 50 users over 2m
-    { duration: '3m', target: 200 },   // Ramp up to 200 users over 3m
-    { duration: '5m', target: 500 },   // Ramp up to 500 users over 5m
-    { duration: '3m', target: 1000 }, // Ramp up to 1000 users over 3m
-    { duration: '5m', target: 1000 }, // Stay at 1000 users for 5m (peak load)
-    { duration: '3m', target: 500 },   // Ramp down to 500 users over 3m
-    { duration: '2m', target: 200 },  // Ramp down to 200 users over 2m
-    { duration: '1m', target: 50 },    // Ramp down to 50 users over 1m
-    { duration: '1m', target: 0 },     // Ramp down to 0 users over 1m
+    { duration: '30s', target: 100 },   // Ramp up to 100 users in 30s
+    { duration: '30s', target: 300 },   // Ramp up to 300 users in 30s
+    { duration: '1m', target: 1000 },   // Ramp up to 1000 users in 1m
+    { duration: '3m', target: 1000 },   // Stay at 1000 users for 3m (peak load)
+    { duration: '1m', target: 500 },    // Ramp down to 500 users in 1m
+    { duration: '30s', target: 100 },   // Ramp down to 100 users in 30s
+    { duration: '30s', target: 0 },     // Ramp down to 0 users in 30s
   ],
   thresholds: {
     http_req_duration: ['p(95)<1000'], // 95% of requests should be below 1000ms
