@@ -4,12 +4,11 @@ import com.example.carts.dto.CreateCartRequest
 import com.example.carts.dto.ErrorResponse
 import com.example.carts.model.Item
 import com.example.carts.service.CartService
-import io.mockk.coEvery
-import kotlinx.coroutines.runBlocking
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.WebTestClient
 import reactor.core.publisher.Mono
@@ -17,21 +16,24 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class CartControllerExceptionTest(
-    @Autowired private val webTestClient: WebTestClient,
-    @MockBean private val cartService: CartService
-) {
+class CartControllerExceptionTest {
+
+    @Autowired
+    private lateinit var webTestClient: WebTestClient
+
+    @MockkBean
+    private lateinit var cartService: CartService
 
     @Test
-    fun shouldReturn500ErrorWithJsonResponseWhenServiceThrowsIllegalStateException(): Unit = runBlocking {
+    fun shouldReturn500ErrorWithJsonResponseWhenServiceThrowsIllegalStateException() {
         // Given
         val request = CreateCartRequest(
             userId = "test-user",
             items = listOf(Item(productId = "product1", quantity = 2))
         )
 
-        // Mock the service to throw IllegalStateException
-        coEvery { cartService.createCart(any()) } throws IllegalStateException("Failed to create cart")
+        // Mock the service to return Mono.error
+        every { cartService.createCart(any()) } returns Mono.error(IllegalStateException("Failed to create cart"))
 
         // When & Then
         webTestClient.post()
@@ -53,12 +55,12 @@ class CartControllerExceptionTest(
     }
 
     @Test
-    fun shouldReturn500ErrorWithJsonResponseWhenGetCartServiceThrowsException(): Unit = runBlocking {
+    fun shouldReturn500ErrorWithJsonResponseWhenGetCartServiceThrowsException() {
         // Given
         val cartId = "test-cart-id"
 
-        // Mock the service to throw IllegalStateException
-        coEvery { cartService.getCart(any()) } throws IllegalStateException("Database query failed")
+        // Mock the service to return Mono.error
+        every { cartService.getCart(any()) } returns Mono.error(IllegalStateException("Database query failed"))
 
         // When & Then
         webTestClient.get()
@@ -78,15 +80,15 @@ class CartControllerExceptionTest(
     }
 
     @Test
-    fun shouldReturn400ErrorWithJsonResponseWhenServiceThrowsIllegalArgumentException(): Unit = runBlocking {
+    fun shouldReturn400ErrorWithJsonResponseWhenServiceThrowsIllegalArgumentException() {
         // Given
         val request = CreateCartRequest(
             userId = "", // Empty userId
             items = emptyList()
         )
 
-        // Mock the service to throw IllegalArgumentException
-        coEvery { cartService.createCart(any()) } throws IllegalArgumentException("User ID is required")
+        // Mock the service to return Mono.error
+        every { cartService.createCart(any()) } returns Mono.error(IllegalArgumentException("User ID is required"))
 
         // When & Then
         webTestClient.post()
@@ -108,15 +110,15 @@ class CartControllerExceptionTest(
     }
 
     @Test
-    fun shouldReturn500ErrorWithJsonResponseWhenServiceThrowsGenericException(): Unit = runBlocking {
+    fun shouldReturn500ErrorWithJsonResponseWhenServiceThrowsGenericException() {
         // Given
         val request = CreateCartRequest(
             userId = "test-user",
             items = listOf(Item(productId = "product1", quantity = 2))
         )
 
-        // Mock the service to throw a generic RuntimeException
-        coEvery { cartService.createCart(any()) } throws RuntimeException("Database connection failed")
+        // Mock the service to return Mono.error
+        every { cartService.createCart(any()) } returns Mono.error(RuntimeException("Database connection failed"))
 
         // When & Then
         webTestClient.post()

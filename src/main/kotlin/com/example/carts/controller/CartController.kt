@@ -7,6 +7,7 @@ import com.example.carts.service.CartService
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/carts")
@@ -15,32 +16,36 @@ class CartController(private val cartService: CartService) {
     private val logger = LoggerFactory.getLogger(CartController::class.java)
 
     @PostMapping
-    suspend fun createCart(@RequestBody request: CreateCartRequest): ResponseEntity<CreateCartResponse> {
+    fun createCart(@RequestBody request: CreateCartRequest): Mono<ResponseEntity<CreateCartResponse>> {
         logger.info("Creating cart for userId: {}, items count: {}", request.userId, request.items.size)
         
-        val cartId = cartService.createCart(request)
-        val response = CreateCartResponse(cartId = cartId)
-        
-        logger.info("Cart created successfully with ID: {}", cartId)
-        return ResponseEntity.ok(response)
+        return cartService.createCart(request)
+            .map { cartId ->
+                val response = CreateCartResponse(cartId = cartId)
+                logger.info("Cart created successfully with ID: {}", cartId)
+                ResponseEntity.ok(response)
+            }
     }
 
     @GetMapping("/{cartId}")
-    suspend fun getCart(@PathVariable cartId: String): ResponseEntity<Any> {
+    fun getCart(@PathVariable cartId: String): Mono<ResponseEntity<Any>> {
         logger.info("Retrieving cart with ID: {}", cartId)
         
-        val cart = cartService.getCart(cartId)
-        return if (cart == null) {
-            logger.warn("Cart not found with ID: {}", cartId)
-            val errorResponse = com.example.carts.dto.ErrorResponse(
-                status = 404,
-                error = "Not Found",
-                message = "Cart with ID '$cartId' not found"
+        return cartService.getCart(cartId)
+            .map { cart ->
+                logger.info("Cart retrieved successfully with ID: {}, items count: {}", cartId, cart.items.size)
+                ResponseEntity.ok(cart) as ResponseEntity<Any>
+            }
+            .switchIfEmpty(
+                Mono.fromCallable {
+                    logger.warn("Cart not found with ID: {}", cartId)
+                    val errorResponse = com.example.carts.dto.ErrorResponse(
+                        status = 404,
+                        error = "Not Found",
+                        message = "Cart with ID '$cartId' not found"
+                    )
+                    ResponseEntity.status(404).body(errorResponse) as ResponseEntity<Any>
+                }
             )
-            ResponseEntity.status(404).body(errorResponse)
-        } else {
-            logger.info("Cart retrieved successfully with ID: {}, items count: {}", cartId, cart.items.size)
-            ResponseEntity.ok(cart)
-        }
     }
 }

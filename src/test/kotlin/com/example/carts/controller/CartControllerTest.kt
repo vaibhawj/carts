@@ -8,9 +8,6 @@ import com.example.carts.model.Cart
 import com.example.carts.model.Item
 import com.example.carts.repository.CartRepository
 import com.fasterxml.jackson.databind.ObjectMapper
-import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -21,6 +18,7 @@ import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import reactor.core.publisher.Mono
+import reactor.test.StepVerifier
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -40,12 +38,13 @@ class CartControllerTest(
     }
 
     @BeforeEach
-    fun setUp(): Unit = runBlocking {
-        cartRepository.deleteAll().awaitSingleOrNull()
+    fun setUp() {
+        StepVerifier.create(cartRepository.deleteAll())
+            .verifyComplete()
     }
 
     @Test
-    fun shouldCreateCartAndReturnCartId(): Unit = runBlocking {
+    fun shouldCreateCartAndReturnCartId() {
         val request = CreateCartRequest(
             userId = "user123",
             items = listOf(
@@ -66,7 +65,7 @@ class CartControllerTest(
     }
 
     @Test
-    fun shouldRetrieveCreatedCart(): Unit = runBlocking {
+    fun shouldRetrieveCreatedCart() {
         val cartId = UUID.randomUUID().toString()
         val cart = DaoCart(
             id = cartId,
@@ -75,7 +74,10 @@ class CartControllerTest(
                 DaoItem(productId = "product1", quantity = 2)
             )
         )
-        cartRepository.save(cart).awaitSingle()
+        
+        StepVerifier.create(cartRepository.save(cart))
+            .expectNextCount(1)
+            .verifyComplete()
 
         webTestClient.get()
             .uri("/carts/$cartId")
@@ -91,7 +93,7 @@ class CartControllerTest(
     }
 
     @Test
-    fun shouldReturn404ForNonExistentCart(): Unit = runBlocking {
+    fun shouldReturn404ForNonExistentCart() {
         val nonExistentId = UUID.randomUUID().toString()
 
         webTestClient.get()
@@ -109,7 +111,7 @@ class CartControllerTest(
     }
 
     @Test
-    fun shouldCreateCartWithEmptyItems(): Unit = runBlocking {
+    fun shouldCreateCartWithEmptyItems() {
         // Test that empty carts are allowed (validation was removed from service)
         val request = CreateCartRequest(
             userId = "test-user",
@@ -128,7 +130,7 @@ class CartControllerTest(
     }
 
     @Test
-    fun shouldReturn400ErrorWithJsonResponseForEmptyUserId(): Unit = runBlocking {
+    fun shouldReturn400ErrorWithJsonResponseForEmptyUserId() {
         // Test that empty userId triggers validation error
         val request = CreateCartRequest(
             userId = "", // Empty userId should trigger IllegalArgumentException
