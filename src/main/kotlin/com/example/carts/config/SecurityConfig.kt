@@ -2,21 +2,21 @@ package com.example.carts.config
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
-import org.springframework.security.config.web.server.ServerHttpSecurity
-import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.security.config.annotation.web.builders.HttpSecurity
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.web.SecurityFilterChain
 
 @Configuration
-@EnableWebFluxSecurity
+@EnableWebSecurity
 class SecurityConfig {
 
     @Bean
-    fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
+    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         return http
-            .authorizeExchange { exchanges ->
-                exchanges
-                    .pathMatchers("/carts/**").permitAll()
-                    .anyExchange().permitAll()
+            .authorizeHttpRequests { auth ->
+                auth
+                    .requestMatchers("/carts/**").permitAll()
+                    .anyRequest().permitAll()
             }
             .csrf { it.disable() }
             .build()

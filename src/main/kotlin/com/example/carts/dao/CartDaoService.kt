@@ -5,15 +5,12 @@ import com.example.carts.dao.Item as DaoItem
 import com.example.carts.model.Cart as DomainCart
 import com.example.carts.model.Item as DomainItem
 import com.example.carts.repository.CartRepository
-import kotlinx.coroutines.reactive.awaitSingle
-import kotlinx.coroutines.reactive.awaitSingleOrNull
-import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Service
 
 @Service
 class CartDaoService(private val cartRepository: CartRepository) {
 
-    suspend fun create(domainCart: DomainCart): DomainCart {
+    fun create(domainCart: DomainCart): DomainCart {
         val daoCart = DaoCart(
             id = domainCart.id,
             userId = domainCart.userId,
@@ -21,7 +18,7 @@ class CartDaoService(private val cartRepository: CartRepository) {
                 DaoItem(productId = it.productId, quantity = it.quantity)
             }
         )
-        val savedDaoCart = cartRepository.save(daoCart).awaitSingle()
+        val savedDaoCart = cartRepository.save(daoCart)
         return DomainCart(
             id = savedDaoCart.id,
             userId = savedDaoCart.userId,
@@ -31,8 +28,8 @@ class CartDaoService(private val cartRepository: CartRepository) {
         )
     }
 
-    suspend fun getById(id: String): DomainCart? {
-        val daoCart: DaoCart? = cartRepository.findById(id).awaitSingleOrNull()
+    fun getById(id: String): DomainCart? {
+        val daoCart: DaoCart? = cartRepository.findById(id).orElse(null)
         return daoCart?.let {
             DomainCart(
                 id = daoCart.id,

@@ -1,12 +1,13 @@
 package com.example.carts.config
 
-import org.slf4j.LoggerFactory
+import jakarta.servlet.Filter
+import jakarta.servlet.FilterChain
+import jakarta.servlet.ServletRequest
+import jakarta.servlet.ServletResponse
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.web.server.ServerWebExchange
-import org.springframework.web.server.WebFilter
-import org.springframework.web.server.WebFilterChain
-import reactor.core.publisher.Mono
 import java.time.Duration
 import java.time.Instant
 
@@ -14,30 +15,43 @@ import java.time.Instant
 class RequestLoggingConfig {
 
     @Bean
-    fun requestLoggingFilter(): WebFilter {
-        return WebFilter { exchange: ServerWebExchange, chain: WebFilterChain ->
+    fun requestLoggingFilter(): Filter {
+        return RequestLoggingFilter()
+    }
+}
+
+class RequestLoggingFilter : Filter {
+    private val logger = org.slf4j.LoggerFactory.getLogger("REQUEST_LOGGER")
+
+    override fun doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain) {
+        if (request is HttpServletRequest && response is HttpServletResponse) {
             val startTime = Instant.now()
-            val request = exchange.request
-            val logger = LoggerFactory.getLogger("REQUEST_LOGGER")
-            
+
             // Log request details
-            logger.info("REQUEST: {} {} from {}", 
-                request.method, 
-                request.uri.path, 
-                request.remoteAddress?.address?.hostAddress ?: "unknown")
-            
-            chain.filter(exchange).doFinally { signalType ->
+            logger.info(
+                "REQUEST: {} {} from {}",
+                request.method,
+                request.requestURI,
+                request.remoteAddr ?: "unknown"
+            )
+
+            try {
+                chain.doFilter(request, response)
+            } finally {
                 val endTime = Instant.now()
                 val duration = Duration.between(startTime, endTime).toMillis()
-                val response = exchange.response
-                
+
                 // Log response details
-                logger.info("RESPONSE: {} {} -> {} {}ms", 
+                logger.info(
+                    "RESPONSE: {} {} -> {} {}ms",
                     request.method,
-                    request.uri.path,
-                    response.statusCode?.value() ?: "unknown",
-                    duration)
+                    request.requestURI,
+                    response.status,
+                    duration
+                )
             }
+        } else {
+            chain.doFilter(request, response)
         }
     }
 }

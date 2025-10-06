@@ -8,27 +8,27 @@ import com.example.carts.model.Cart
 import com.example.carts.model.Item
 import com.example.carts.repository.CartRepository
 import com.fasterxml.jackson.databind.ObjectMapper
-import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
-import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
-import reactor.core.publisher.Mono
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
 class CartControllerTest(
-    @Autowired private val webTestClient: WebTestClient,
+    @Autowired private val mockMvc: MockMvc,
     @Autowired private val cartRepository: CartRepository,
     @Autowired private val objectMapper: ObjectMapper
 ) {
@@ -40,12 +40,12 @@ class CartControllerTest(
     }
 
     @BeforeEach
-    fun setUp(): Unit = runBlocking {
-        cartRepository.deleteAll().awaitSingleOrNull()
+    fun setUp() {
+        cartRepository.deleteAll()
     }
 
     @Test
-    fun shouldCreateCartAndReturnCartId(): Unit = runBlocking {
+    fun shouldCreateCartAndReturnCartId() {
         val request = CreateCartRequest(
             userId = "user123",
             items = listOf(
@@ -54,19 +54,16 @@ class CartControllerTest(
             )
         )
 
-        webTestClient.post()
-            .uri("/carts")
+        mockMvc.perform(post("/carts")
             .contentType(MediaType.APPLICATION_JSON)
-            .body(Mono.just(request), CreateCartRequest::class.java)
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.cartId").exists()
-            .jsonPath("$.message").isEqualTo("Cart created successfully")
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.cartId").exists())
+            .andExpect(jsonPath("$.message").value("Cart created successfully"))
     }
 
     @Test
-    fun shouldRetrieveCreatedCart(): Unit = runBlocking {
+    fun shouldRetrieveCreatedCart() {
         val cartId = UUID.randomUUID().toString()
         val cart = DaoCart(
             id = cartId,
@@ -75,82 +72,70 @@ class CartControllerTest(
                 DaoItem(productId = "product1", quantity = 2)
             )
         )
-        cartRepository.save(cart).awaitSingle()
+        cartRepository.save(cart)
 
-        webTestClient.get()
-            .uri("/carts/$cartId")
-            .exchange()
-            .expectStatus().isOk
-            .expectBody(Cart::class.java)
-            .consumeWith { response ->
-                val retrievedCart = response.responseBody
-                assert(retrievedCart?.id == cartId)
-                assert(retrievedCart?.userId == "user123")
-                assert(retrievedCart?.items?.size == 1)
-            }
+        val result = mockMvc.perform(get("/carts/$cartId"))
+            .andExpect(status().isOk)
+            .andReturn()
+
+        val retrievedCart = objectMapper.readValue(result.response.contentAsString, Cart::class.java)
+        assertEquals(cartId, retrievedCart.id)
+        assertEquals("user123", retrievedCart.userId)
+        assertEquals(1, retrievedCart.items.size)
     }
 
     @Test
-    fun shouldReturn404ForNonExistentCart(): Unit = runBlocking {
+    fun shouldReturn404ForNonExistentCart() {
         val nonExistentId = UUID.randomUUID().toString()
 
-        webTestClient.get()
-            .uri("/carts/$nonExistentId")
-            .exchange()
-            .expectStatus().isNotFound
-            .expectBody(ErrorResponse::class.java)
-            .consumeWith { response ->
-                val errorResponse = response.responseBody
-                assertNotNull(errorResponse)
-                assertEquals(404, errorResponse.status)
-                assertEquals("Not Found", errorResponse.error)
-                assert(errorResponse.message.contains("Cart with ID '$nonExistentId' not found"))
-            }
+        val result = mockMvc.perform(get("/carts/$nonExistentId"))
+            .andExpect(status().isNotFound)
+            .andReturn()
+
+        val errorResponse = objectMapper.readValue(result.response.contentAsString, ErrorResponse::class.java)
+        assertNotNull(errorResponse)
+        assertEquals(404, errorResponse.status)
+        assertEquals("Not Found", errorResponse.error)
+        assert(errorResponse.message.contains("Cart with ID '$nonExistentId' not found"))
     }
 
     @Test
-    fun shouldCreateCartWithEmptyItems(): Unit = runBlocking {
+    fun shouldCreateCartWithEmptyItems() {
         // Test that empty carts are allowed (validation was removed from service)
         val request = CreateCartRequest(
             userId = "test-user",
             items = emptyList()
         )
 
-        webTestClient.post()
-            .uri("/carts")
+        mockMvc.perform(post("/carts")
             .contentType(MediaType.APPLICATION_JSON)
-            .body(Mono.just(request), CreateCartRequest::class.java)
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.cartId").exists()
-            .jsonPath("$.message").isEqualTo("Cart created successfully")
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.cartId").exists())
+            .andExpect(jsonPath("$.message").value("Cart created successfully"))
     }
 
     @Test
-    fun shouldReturn400ErrorWithJsonResponseForEmptyUserId(): Unit = runBlocking {
+    fun shouldReturn400ErrorWithJsonResponseForEmptyUserId() {
         // Test that empty userId triggers validation error
         val request = CreateCartRequest(
             userId = "", // Empty userId should trigger IllegalArgumentException
             items = emptyList()
         )
 
-        webTestClient.post()
-            .uri("/carts")
+        val result = mockMvc.perform(post("/carts")
             .contentType(MediaType.APPLICATION_JSON)
-            .body(Mono.just(request), CreateCartRequest::class.java)
-            .exchange()
-            .expectStatus().isBadRequest
-            .expectBody(ErrorResponse::class.java)
-            .consumeWith { response ->
-                val errorResponse = response.responseBody
-                assertNotNull(errorResponse)
-                assertEquals(400, errorResponse.status)
-                assertEquals("Bad Request", errorResponse.error)
-                assertEquals("User ID is required", errorResponse.message)
-                assertEquals("/carts", errorResponse.path)
-                assertNotNull(errorResponse.timestamp)
-            }
+            .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest)
+            .andReturn()
+
+        val errorResponse = objectMapper.readValue(result.response.contentAsString, ErrorResponse::class.java)
+        assertNotNull(errorResponse)
+        assertEquals(400, errorResponse.status)
+        assertEquals("Bad Request", errorResponse.error)
+        assertEquals("User ID is required", errorResponse.message)
+        assertEquals("/carts", errorResponse.path)
+        assertNotNull(errorResponse.timestamp)
     }
 
 }

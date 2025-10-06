@@ -15,7 +15,7 @@ class CartController(private val cartService: CartService) {
     private val logger = LoggerFactory.getLogger(CartController::class.java)
 
     @PostMapping
-    suspend fun createCart(@RequestBody request: CreateCartRequest): ResponseEntity<CreateCartResponse> {
+    fun createCart(@RequestBody request: CreateCartRequest): ResponseEntity<CreateCartResponse> {
         logger.info("Creating cart for userId: {}, items count: {}", request.userId, request.items.size)
         
         val cartId = cartService.createCart(request)
@@ -26,7 +26,7 @@ class CartController(private val cartService: CartService) {
     }
 
     @GetMapping("/{cartId}")
-    suspend fun getCart(@PathVariable cartId: String): ResponseEntity<Any> {
+    fun getCart(@PathVariable cartId: String): ResponseEntity<Any> {
         logger.info("Retrieving cart with ID: {}", cartId)
         
         val cart = cartService.getCart(cartId)

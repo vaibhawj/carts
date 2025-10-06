@@ -11,7 +11,7 @@ class CartService(private val cartDaoService: CartDaoService) {
 
     private val logger = LoggerFactory.getLogger(CartService::class.java)
 
-    suspend fun createCart(request: CreateCartRequest): String {
+    fun createCart(request: CreateCartRequest): String {
         logger.debug("Starting cart creation for userId: {}", request.userId)
         
         // Basic business logic: validate request
@@ -38,7 +38,7 @@ class CartService(private val cartDaoService: CartDaoService) {
         return cartId
     }
 
-    suspend fun getCart(cartId: String): Cart? {
+    fun getCart(cartId: String): Cart? {
         logger.debug("Starting cart retrieval for cartId: {}", cartId)
         
         // Basic business logic: validate cartId
