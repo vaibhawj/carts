@@ -55,5 +55,11 @@ tasks.withType<Test> {
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
-    jvmArgs = listOf("-Xms75m", "-Xmx75m")
+    // Configure heap size and CPU cores for load testing with virtual threads
+    jvmArgs = listOf(
+        "-Xms512m",             // Initial heap size
+        "-Xmx512m",             // Maximum heap size (512MB for load testing)
+        "-XX:ActiveProcessorCount=2",  // CPU cores 
+        "-XX:+UseZGC"           // Use ZGC for better latency with virtual threads
+    )
 }
