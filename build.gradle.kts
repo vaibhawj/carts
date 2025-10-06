@@ -54,7 +54,7 @@ tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
     jvmArgs = listOf(
         "-Xms128m",             // Initial heap size
         "-Xmx128m",               // Maximum heap size
-        "-XX:ActiveProcessorCount=1",  // CPU cores
+        "-XX:ActiveProcessorCount=2",  // CPU cores
         "-XX:+UseZGC"           // Use ZGC for better latency with virtual threads
     )
 }
