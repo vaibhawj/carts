@@ -8,8 +8,8 @@ export let options = {
   stages: [
     { duration: '30s', target: 100 },   // Ramp up to 100 users in 30s
     { duration: '30s', target: 500 },   // Ramp up to 300 users in 30s
-    { duration: '1m', target: 2000 },   // Ramp up to 1000 users in 1m
-    { duration: '3m', target: 2000 },   // Stay at 1000 users for 3m (peak load)
+    { duration: '1m', target: 1000 },   // Ramp up to 1000 users in 1m
+    { duration: '3m', target: 1000 },   // Stay at 1000 users for 3m (peak load)
     { duration: '1m', target: 500 },    // Ramp down to 500 users in 1m
     { duration: '30s', target: 100 },   // Ramp down to 100 users in 30s
     { duration: '30s', target: 0 },     // Ramp down to 0 users in 30s

@@ -18,7 +18,7 @@ load-testing/
 - Cart API running on `http://localhost:8080`
 - MongoDB running on `localhost:27017`
 
-⚠️ **High-Scale Warning**: This test scales up to 2000 concurrent users over ~7 minutes. Make sure your system can handle this load!
+⚠️ **High-Scale Warning**: This test scales up to 1000 concurrent users over ~7 minutes. Make sure your system can handle this load!
 
 ### Simple Test (Recommended)
 
@@ -27,7 +27,7 @@ load-testing/
 ```
 
 **What you get:**
-- ✅ 7-minute high-scale load test (up to 2000 users)
+- ✅ 7-minute high-scale load test (up to 1000 users)
 - ✅ Real-time web dashboard at `http://localhost:5665`
 - ✅ Tests create cart (20%) and view existing cart (80%) scenarios
 - ✅ Realistic user behavior patterns with quick ramp-up
@@ -62,15 +62,15 @@ The web dashboard provides:
 ### Default Test
 - **Total Duration**: ~7 minutes
 - **Load Pattern**: Quick ramp-up and ramp-down
-- **Peak Users**: 2000 concurrent users
+- **Peak Users**: 1000 concurrent users
 - **Create Cart**: 20% of requests
 - **View Existing Cart**: 80% of requests (realistic user behavior)
 
 ### Load Stages
 - **0-30s**: Ramp up to 100 users (warmup)
 - **30s-1m**: Ramp up to 500 users (rapid increase)
-- **1m-2m**: Ramp up to 2000 users (peak load approach)
-- **2m-5m**: Stay at 2000 users (sustained peak load - 3 minutes)
+- **1m-2m**: Ramp up to 1000 users (peak load approach)
+- **2m-5m**: Stay at 1000 users (sustained peak load - 3 minutes)
 - **5m-6m**: Ramp down to 500 users (quick ramp down)
 - **6m-6.5m**: Ramp down to 100 users (gradual cooldown)
 - **6.5m-7m**: Ramp down to 0 users (complete cooldown)
@@ -93,7 +93,7 @@ Edit `load-test.js` to change the `stages` array:
 stages: [
   { duration: '30s', target: 100 },   // Customize ramp-up
   { duration: '30s', target: 500 },   // Customize targets
-  { duration: '1m', target: 2000 },   // Customize duration
+  { duration: '1m', target: 1000 },   // Customize duration
   // ... add more stages
 ],
 ```
