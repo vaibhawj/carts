@@ -18,7 +18,7 @@ load-testing/
 - Cart API running on `http://localhost:8080`
 - MongoDB running on `localhost:27017`
 
-⚠️ **High-Scale Warning**: This test scales up to 1000 concurrent users over 25 minutes. Make sure your system can handle this load!
+⚠️ **High-Scale Warning**: This test scales up to 1000 concurrent users over ~7 minutes. Make sure your system can handle this load!
 
 ### Simple Test (Recommended)
 
@@ -27,10 +27,10 @@ load-testing/
 ```
 
 **What you get:**
-- ✅ 25-minute high-scale load test (up to 1000 users)
+- ✅ 7-minute high-scale load test (up to 1000 users)
 - ✅ Real-time web dashboard at `http://localhost:5665`
 - ✅ Tests create cart (20%) and view existing cart (80%) scenarios
-- ✅ Realistic user behavior patterns with gradual ramp-up
+- ✅ Realistic user behavior patterns with quick ramp-up
 - ✅ Automatic health checks
 - ✅ Clean console output
 - ✅ Stop with Ctrl+C
@@ -60,22 +60,20 @@ The web dashboard provides:
 ## 🎯 Test Scenarios
 
 ### Default Test
-- **Total Duration**: 25 minutes
-- **Load Pattern**: Realistic ramp-up and ramp-down
+- **Total Duration**: ~7 minutes
+- **Load Pattern**: Quick ramp-up and ramp-down
 - **Peak Users**: 1000 concurrent users
 - **Create Cart**: 20% of requests
 - **View Existing Cart**: 80% of requests (realistic user behavior)
 
 ### Load Stages
-- **0-2m**: Ramp up to 50 users
-- **2m-5m**: Ramp up to 200 users  
-- **5m-10m**: Ramp up to 500 users
-- **10m-13m**: Ramp up to 1000 users
-- **13m-18m**: Stay at 1000 users (peak load)
-- **18m-21m**: Ramp down to 500 users
-- **21m-23m**: Ramp down to 200 users
-- **23m-24m**: Ramp down to 50 users
-- **24m-25m**: Ramp down to 0 users
+- **0-30s**: Ramp up to 100 users (warmup)
+- **30s-1m**: Ramp up to 500 users (rapid increase)
+- **1m-2m**: Ramp up to 1000 users (peak load approach)
+- **2m-5m**: Stay at 1000 users (sustained peak load - 3 minutes)
+- **5m-6m**: Ramp down to 500 users (quick ramp down)
+- **6m-6.5m**: Ramp down to 100 users (gradual cooldown)
+- **6.5m-7m**: Ramp down to 0 users (complete cooldown)
 
 ### Customizable
 - **Stages**: Modify the `stages` array in `load-test.js` for different load patterns
@@ -90,19 +88,23 @@ Press `Ctrl+C` to stop any running test gracefully.
 
 ### Modify Test Parameters
 
-Edit `simple-test.sh`:
-```bash
-# Change duration and users
-K6_WEB_DASHBOARD=true k6 run --duration=5m --vus=50 - << 'EOF'
+Edit `load-test.js` to change the `stages` array:
+```javascript
+stages: [
+  { duration: '30s', target: 100 },   // Customize ramp-up
+  { duration: '30s', target: 500 },   // Customize targets
+  { duration: '1m', target: 1000 },   // Customize duration
+  // ... add more stages
+],
 ```
 
 ### Modify Test Scenarios
 
-Edit the JavaScript section in `simple-test.sh` to change:
-- Request ratios (create vs view)
-- Request payloads
-- Response time thresholds
-- Custom metrics
+Edit `load-test.js` to change:
+- **Request ratios**: Modify the `Math.random() < 0.2` condition (currently 20% create, 80% view)
+- **Request payloads**: Edit the payload JSON in the test function
+- **Response time thresholds**: Adjust the `check()` function assertions
+- **Custom metrics**: Add additional checks or metrics
 
 ## 📈 Understanding Results
 
@@ -113,9 +115,8 @@ Edit the JavaScript section in `simple-test.sh` to change:
 - **Status Codes**: Distribution of HTTP responses
 
 ### Thresholds
-- Create cart: < 500ms response time
-- View cart: < 300ms response time
-- Error rate: < 20%
+- **P95 Response Time**: < 1000ms (95% of requests below 1 second)
+- **Error Rate**: < 5% (less than 5% failed requests)
 
 ## 🚨 Troubleshooting
 
